@@ -39,6 +39,45 @@ public class InAppChromeClient extends WebChromeClient {
     public InAppChromeClient(CordovaWebView webView) {
         super();
         this.webView = webView;
+        cordovaPluginThis = webView.getPluginManager().getPlugin("InAppBrowser");
+    }
+    private boolean isMissingPermissions(int req_requestCode, ArrayList<String> permissions) {
+        ArrayList<String> missingPermissions = new ArrayList<>();
+        for (String permission: permissions) {
+            if (!PermissionHelper.hasPermission(cordovaPluginThis, permission)) {
+                missingPermissions.add(permission);
+            }
+        }
+
+        boolean isMissingPermissions = missingPermissions.size() > 0;
+        LOG.d(LOG_TAG, "KonPermissionRequest isMissingPermissions"+isMissingPermissions);
+
+        if (isMissingPermissions) {
+            String[] missing = missingPermissions.toArray(new String[missingPermissions.size()]);
+            LOG.d(LOG_TAG, "KonPermissionRequest requestPermissions");
+            PermissionHelper.requestPermissions(cordovaPluginThis, req_requestCode, missing);
+        }
+        return isMissingPermissions;
+    }
+
+
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @Override
+    public void onPermissionRequest(PermissionRequest request) {
+//                        super.onPermissionRequest(request);
+        LOG.d(LOG_TAG, "KonPermissionRequest");
+        final String[] requestedResources = request.getResources();
+        for (String r : requestedResources) {
+            if (r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+                LOG.d(LOG_TAG, "KonPermissionRequest PermissionRequest.RESOURCE_AUDIO_CAPTURE:"+PermissionRequest.RESOURCE_AUDIO_CAPTURE);
+                int req_requestCode = 0;//PermissionRequest.RESOURCE_AUDIO_CAPTURE;
+                isMissingPermissions(req_requestCode,
+                        new ArrayList<>(Arrays.asList( new String[] { PermissionRequest.RESOURCE_AUDIO_CAPTURE }))
+                );
+                break;
+            }
+        }
     }
     /**
      * Handle database quota exceeded notification.
